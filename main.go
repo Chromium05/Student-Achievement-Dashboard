@@ -1,21 +1,21 @@
 package main
 
 import (
-    "log"
-    "os"
-    "tugasminggu3/config"
-    "tugasminggu3/database"
+	"crud-alumni-5/config"
+	"crud-alumni-5/database"
+	"log"
+	"os"
 )
 
 func main() {
-    config.LoadEnv()
-    db := database.ConnectDB()
-    app := config.NewApp(db)
+	config.LoadEnv()
+	db := database.ConnectDB()
+	app := config.NewApp(db)
 
-    port := os.Getenv("APP_PORT")
-    if port == "" {
-        port = "3000"
-    }
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "3000"
+	}
 
-    log.Fatal(app.Listen(":" + port))
+	log.Fatal(app.Listen(":" + port))
 }

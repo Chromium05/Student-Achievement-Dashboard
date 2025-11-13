@@ -1,20 +1,44 @@
 package model
 
+import "time"
+
 type Alumni struct {
-    Nama       *string `json:"nama"`
-    IDFakultas *int    `json:"id_fakultas"`
-    IDProdi    *int    `json:"id_prodi"`
-    TahunLulus *int    `json:"tahun_lulus"`
-    Sumber     *string `json:"sumber"`
-    IDSumber   *string `json:"id_sumber"`
+    ID          int    `json:"id"`
+    NIM         string `json:"nim"`
+    Nama        string `json:"nama"`
+    Jurusan     string `json:"jurusan"`
+    Angkatan    int    `json:"angkatan"`
+    Tahun_Lulus int    `json:"tahun_lulus"`
+    Email       string `json:"email"`
+    No_Telepon  string `json:"no_telepon"`
+    Alamat      string `json:"alamat"`
+    CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type SemuaAlumni struct {
-    NIM        *string `json:"nim"`
-    Nama       *string `json:"nama"`
-    IDFakultas *int    `json:"id_fakultas"`
-    IDProdi    *int    `json:"id_prodi"`
-    TahunLulus *int    `json:"tahun_lulus"`
-    Sumber     *string `json:"sumber"`
-    IDSumber   *string `json:"id_sumber"`
+type CreateAlumni struct {
+    ID          int    
+    NIM         string `json:"nim"`
+    Nama        string `json:"nama"`
+    Jurusan     string `json:"jurusan"`
+    Angkatan    int    `json:"angkatan"`
+    Tahun_Lulus int    `json:"tahun_lulus"`
+    Email       string `json:"email"`
+    No_Telepon  string `json:"no_telepon"`
+    Alamat      string `json:"alamat"`
+}
+
+type SoftDeleteAlumni struct {
+    ID          int    `json:"id"`
+    NIM         string `json:"nim"`
+    Nama        string `json:"nama"`
+    Jurusan     string `json:"jurusan"`
+    Angkatan    int    `json:"angkatan"`
+    Tahun_Lulus int    `json:"tahun_lulus"`
+    Email       string `json:"email"`
+    No_Telepon  string `json:"no_telepon"`
+    Alamat      string `json:"alamat"`
+    CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+    IsDeleted   bool    `json:"is_deleted"`
 }

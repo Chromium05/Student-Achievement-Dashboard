@@ -1,86 +1,248 @@
 package service
 
 import (
-    "database/sql"
-    "os"
-    "github.com/gofiber/fiber/v2"
-    "tugasminggu3/app/repository"
+	"crud-alumni-5/app/model"
+	"crud-alumni-5/app/repository"
+	"database/sql"
+	"errors"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func CheckAlumniService(c *fiber.Ctx, db *sql.DB) error {
-    key := c.Params("key")
-    if key != os.Getenv("API_KEY") {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "message": "API Key tidak valid",
-            "success": false,
-        })
-    }
+func GetAllAlumniService(c *fiber.Ctx, db *sql.DB) error {
+	key := c.Params("key")
+	if key != os.Getenv("API_KEY") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "API tidak sesuai",
+			"success": false,
+		})
+	}
 
-    // Coba ambil nim dari form body dulu
-    nim := c.FormValue("nim")
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "10"))
+	sortBy := c.Query("sortBy", "id")
+	order := c.Query("order", "asc")
+	search := c.Query("search", "")
+	offset := (page - 1) * limit
 
-    // Kalau kosong, ambil dari URL param
-    if nim == "" {
-        nim = c.Params("nim")
-    }
+	// Validasi input
+	sortByWhitelist := map[string]bool{"id": true, "nama": true, "email": true, "created_at": true}
 
-    if nim == "" {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-            "message": "NIM wajib diisi",
-            "success": false,
-        })
-    }
-    
-    alumni, err := repository.CheckAlumniByNim(db, nim)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return c.Status(fiber.StatusOK).JSON(fiber.Map{
-                "message": "Mahasiswa bukan alumni",
-                "success": true,
-                "isAlumni": false,
-            })
-        }
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "message": "Gagal cek alumni karena " + err.Error(),
-            "success": false,
-        })
-    }
+	if !sortByWhitelist[sortBy] {
+		sortBy = "id"
+	}
+	if strings.ToLower(order) != "desc" {
+		order = "asc"
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{
-        "message": "Ini get salah satu aja",
-        "success": true,
-        "isAlumni": true,
-        "alumni": alumni,
-    })
+	alumni, err := repository.GetAllAlumni(db, search, sortBy, order, limit, offset)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal terhubung ke database.",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data":    alumni,
+		"message": "Berhasil mendapatkan data alumni",
+		"success": true,
+	})
 }
 
-func GetAllAlumniService(c *fiber.Ctx, db *sql.DB) error {
-    key := c.Params("key")
-    if key != os.Getenv("API_KEY") {
-        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-            "message": "API Key tidak valid",
-            "success": false,
-        })
-    }
+func GetAlumniByIDService(c *fiber.Ctx, db *sql.DB) error {
+	key := c.Params("key")
+	if key != os.Getenv("API_KEY") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "API tidak sesuai",
+			"success": false,
+		})
+	}
 
-    alumni, err := repository.GetAllAlumni(db)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return c.Status(fiber.StatusOK).JSON(fiber.Map{
-                "message": "Tidak ada data alumni",
-                "success": true,
-                "alumni": nil,
-            })
-        }
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "message": "Gagal mendapatkan data alumni karena " + err.Error(),
-            "success": false,
-        })
-    }
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "ID tidak valid",
+			"success": false,
+		})
+	}
 
-    return c.Status(fiber.StatusOK).JSON(fiber.Map{
-        "message": "Ini get semua alumni",
-        "success": true,
-        "alumni": alumni,
-    })
+	alumni, err := repository.GetAlumniByID(db, id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal terhubung ke database karena: ",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+
+	if alumni == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Alumni not found",
+			"success": false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data":    alumni,
+		"message": "Berhasil mendapatkan data alumni",
+		"success": true,
+	})
+}
+
+func PostNewAlumniService(c *fiber.Ctx, db *sql.DB) error {
+	key := c.Params("key")
+	if key != os.Getenv("API_KEY") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "API tidak sesuai",
+			"success": false,
+		})
+	}
+
+	var input model.CreateAlumni
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Format JSON tidak valid!",
+			"success": false,
+		})
+	}
+
+	alumni, err := repository.PostNewAlumni(db, &input)
+	if err != nil {
+		// Handle specific errors dengan response yang sesuai
+		switch {
+		case errors.Is(err, repository.ErrDuplicateNIM):
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error":   "NIM " + input.NIM + " sudah terdaftar! Silakan gunakan NIM yang berbeda.",
+				"success": false,
+			})
+		case errors.Is(err, repository.ErrDuplicateEmail):
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error":   "Email " + input.Email + " sudah terdaftar! Silakan gunakan email yang berbeda.",
+				"success": false,
+			})
+		case errors.Is(err, repository.ErrInvalidInput):
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   "Semua field harus diisi dengan benar!",
+				"success": false,
+			})
+		default:
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Gagal menambahkan data: ",
+				"error":   err.Error(),
+				"success": false,
+			})
+		}
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"data":    alumni,
+		"message": "Data alumni berhasil ditambahkan!",
+		"success": true,
+	})
+}
+
+func UpdateAlumniService(c *fiber.Ctx, db *sql.DB) error {
+	key := c.Params("key")
+	if key != os.Getenv("API_KEY") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "API tidak sesuai",
+			"success": false,
+		})
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Mohon masukkan ID yang sesuai.",
+			"success": false,
+		})
+	}
+
+	var input model.CreateAlumni
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Format JSON tidak valid!",
+			"success": false,
+		})
+	}
+
+	alumni, err := repository.UpdateAlumni(db, &input, id)
+	if err != nil {
+		// Error handling input
+		switch {
+		case errors.Is(err, repository.ErrDuplicateNIM):
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error":   "NIM " + input.NIM + " sudah terdaftar! Silakan gunakan NIM yang berbeda.",
+				"success": false,
+			})
+		case errors.Is(err, repository.ErrDuplicateEmail):
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error":   "Email " + input.Email + " sudah terdaftar! Silakan gunakan email yang berbeda.",
+				"success": false,
+			})
+		case errors.Is(err, repository.ErrInvalidInput):
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   "Semua field harus diisi dengan benar!",
+				"success": false,
+			})
+		default:
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "Gagal menambahkan data: ",
+				"error":   err.Error(),
+				"success": false,
+			})
+		}
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"data":    alumni,
+		"message": "Data alumni" + alumni.Nama + " berhasil di-update!",
+		"success": true,
+	})
+}
+
+func DeleteAlumniService(c *fiber.Ctx, db *sql.DB) error {
+	key := c.Params("key")
+	if key != os.Getenv("API_KEY") {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "API tidak sesuai",
+			"success": false,
+		})
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "Mohon masukkan ID yang sesuai.",
+			"success": false,
+		})
+	}
+
+	alumni, err := repository.DeleteAlumni(db, id)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal menambahkan data.",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+
+	if alumni == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   "Alumni tidak ditemukan.",
+			"success": false,
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"message": "Alumni " + alumni.Nama + " berhasil dihapus!",
+		"success": true,
+		"data":    alumni,
+	})
 }
