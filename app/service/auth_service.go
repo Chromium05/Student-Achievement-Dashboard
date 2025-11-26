@@ -1,9 +1,9 @@
 package service
 
 import (
-	"crud-alumni-5/app/model"
-	"crud-alumni-5/app/repository"
-	"crud-alumni-5/utils"
+	"student-report/app/model"
+	"student-report/app/repository"
+	"student-report/utils"
 	"database/sql"
 	"errors"
 

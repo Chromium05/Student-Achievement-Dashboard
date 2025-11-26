@@ -1,8 +1,8 @@
 package config
 
 import (
-	"crud-alumni-5/middleware"
-	"crud-alumni-5/route"
+	"student-report/middleware"
+	"student-report/route"
 	"database/sql"
 
 	"github.com/gofiber/fiber/v2"

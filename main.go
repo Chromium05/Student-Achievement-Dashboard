@@ -1,16 +1,18 @@
 package main
 
 import (
-	"crud-alumni-5/config"
-	"crud-alumni-5/database"
+	"student-report/config"
+	"student-report/database"
 	"log"
 	"os"
 )
 
 func main() {
 	config.LoadEnv()
-	db := database.ConnectDB()
-	app := config.NewApp(db)
+	postgres := database.PostgreConn()
+	mongoDB := database.MongoConn()
+	_ = mongoDB // Gunakan mongoDB sesuai kebutuhan aplikasi Anda
+	app := config.NewApp(postgres)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"crud-alumni-5/app/model"
-	"crud-alumni-5/app/repository"
+	"student-report/app/model"
+	"student-report/app/repository"
 	"database/sql"
 	"os"
 	"strconv"

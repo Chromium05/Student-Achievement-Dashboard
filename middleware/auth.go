@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"crud-alumni-5/app/repository"
-	"crud-alumni-5/utils"
+	"student-report/app/repository"
+	"student-report/utils"
 	"database/sql"
 	"net/http"
 	"strconv"

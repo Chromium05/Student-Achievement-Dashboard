@@ -1,8 +1,8 @@
 package route
 
 import (
-	"crud-alumni-5/app/service"
-	"crud-alumni-5/middleware"
+	"student-report/app/service"
+	"student-report/middleware"
 	"database/sql"
 	"github.com/gofiber/fiber/v2"
 )

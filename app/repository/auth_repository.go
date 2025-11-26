@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"crud-alumni-5/app/model"
+	"student-report/app/model"
 	"database/sql"
 )
 

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"crud-alumni-5/app/repository"
+	"student-report/app/repository"
 	"database/sql"
 	"os"
 

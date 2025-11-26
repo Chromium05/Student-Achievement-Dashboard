@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"crud-alumni-5/app/model"
+	"student-report/app/model"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
