@@ -13,38 +13,54 @@ func RegisterRoutes(app *fiber.App, db *sql.DB) {
 		return c.SendString("Halo trainer!")
 	})
 
-	// Untuk routing login
-	app.Post("/login", func(c *fiber.Ctx) error {
+	app.Post("/:key/v1/auth/login", func(c *fiber.Ctx) error {
 		return service.LoginService(c, db)
+	})
+
+	// Logout endpoint (POST /:key/v1/auth/logout)
+	app.Post("/:key/v1/auth/logout", middleware.AuthRequired(), func(c *fiber.Ctx) error {
+		return service.LogoutService(c)
+	})
+
+	app.Post("/:key/v1/auth/refresh", func(c *fiber.Ctx) error {
+		return service.RefreshTokenService(c, db)
 	})
 
 	// Implementasi Middleware
 	protected := app.Group("", middleware.AuthRequired())
 
+	// Untuk routing students 
+	students := protected.Group("/:key/v1/students")
+
+	// Menampilkan semua data students (GET 127.0.0.1:3000/:key/v1/students)
+	students.Get("/", func(c *fiber.Ctx) error {
+		return service.GetStudentsService(c, db)
+	})
+
 	// Untuk routing alumni
 	alumni := protected.Group("/:key/alumni")
 
-	// Menampilkan semua data alumni (GET 127.0.0.1:3000/access/alumni)
+	// Menampilkan semua data alumni (GET 127.0.0.1:3000/:key/alumni)
 	alumni.Get("/", func(c *fiber.Ctx) error {
 		return service.GetAllAlumniService(c, db)
 	})
 
-	// Menampilkan alumni berdasarkan ID (GET 127.0.0.1:3000/access/alumni/:id)
+	// Menampilkan alumni berdasarkan ID (GET 127.0.0.1:3000/:key/alumni/:id)
 	alumni.Get("/:id", func(c *fiber.Ctx) error {
 		return service.GetAlumniByIDService(c, db)
 	})
 
-	// Menambahkan data baru (POST 127.0.0.1:3000/access/alumni)
+	// Menambahkan data baru (POST 127.0.0.1:3000/:key/alumni)
 	alumni.Post("/", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.PostNewAlumniService(c, db)
 	})
 
-	// Update data yang sudah ada (PUT 127.0.0.1:3000/access/alumni/:id)
+	// Update data yang sudah ada (PUT 127.0.0.1:3000/:key/alumni/:id)
 	alumni.Put("/:id", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.UpdateAlumniService(c, db)
 	})
 
-	// Hapus data yang sudah ada (DELETE 127.0.0.1:3000/access/alumni/:id)
+	// Hapus data yang sudah ada (DELETE 127.0.0.1:3000/:key/alumni/:id)
 	alumni.Delete("/:id", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.DeleteAlumniService(c, db)
 	})
@@ -52,27 +68,27 @@ func RegisterRoutes(app *fiber.App, db *sql.DB) {
 	// Untuk routing pekerjaan alumni
 	pekerjaan := protected.Group("/:key/pekerjaan")
 
-	// Menampilkan semua data pekerjaan alumni (GET	127.0.0:3000/access/pekerjaan)
+	// Menampilkan semua data pekerjaan alumni (GET	127.0.0:3000/:key/pekerjaan)
 	pekerjaan.Get("/", func(c *fiber.Ctx) error {
 		return service.GetAllPekerjaanAlumniService(c, db)
 	})
 
-	// Menampilkan pekerjaan alumni berdasarkan ID (GET 127.0.0:3000/access/pekerjaan/:id)
+	// Menampilkan pekerjaan alumni berdasarkan ID (GET 127.0.0:3000/:key/pekerjaan/:id)
 	pekerjaan.Get("/:id", func(c *fiber.Ctx) error {
 		return service.GetPekerjaanByIDService(c, db)
 	})
 
-	// Menampilkan pekerjaan alumni berdasarkan Alumni_ID (GET 127.0.0:3000/access/pekerjaan/alumni/:alumni_id)
+	// Menampilkan pekerjaan alumni berdasarkan Alumni_ID (GET 127.0.0:3000/:key/pekerjaan/alumni/:alumni_id)
 	pekerjaan.Get("/alumni/:alumni_id", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.GetPekerjaanByAlumniIDService(c, db)
 	})
 
-	// Menambahkan data pekerjaan alumni (POST 127.0.0:3000/access/pekerjaan)
+	// Menambahkan data pekerjaan alumni (POST 127.0.0:3000/:key/pekerjaan)
 	pekerjaan.Post("/", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.PostNewPekerjaanAlumniService(c, db)
 	})
 
-	// Update data pekerjaan alumni yang sudah ada (PUT 127.0.0:3000/access/pekerjaan/:id)
+	// Update data pekerjaan alumni yang sudah ada (PUT 127.0.0.1:3000/:key/pekerjaan/:id)
 	pekerjaan.Put("/:id", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.UpdatePekerjaanAlumniService(c, db)
 	})
@@ -82,7 +98,7 @@ func RegisterRoutes(app *fiber.App, db *sql.DB) {
 		return service.SoftDeletePekerjaanAlumniService(c, db)
 	})
 
-	// HARD DELETE data pekerjaan alumni yang sudah ada (DELETE 127.0.0:3000/access/pekerjaan/:id)
+	// HARD DELETE data pekerjaan alumni yang sudah ada (DELETE 127.0.0.1:3000/:key/pekerjaan/:id)
 	pekerjaan.Delete("/:id", middleware.AdminOnly(), func(c *fiber.Ctx) error {
 		return service.DeletePekerjaanAlumniService(c, db)
 	})
@@ -102,17 +118,17 @@ func RegisterRoutes(app *fiber.App, db *sql.DB) {
 	// Untuk routing trash
 	trash := protected.Group("/:key/trash")
 
-	// Menampilkan semua data pekerjaan alumni yang dihapus (GET 127.0.0.1:3000/access/trash)
+	// Menampilkan semua data pekerjaan alumni yang dihapus (GET 127.0.0.1:3000/:key/trash)
 	trash.Get("/", func(c *fiber.Ctx) error {
 		return service.GetAllTrashService(c, db)
 	})
 
-	// Restore data dari trash (PUT 127.0.0.1:3000/access/trash/restore/:id)
+	// Restore data dari trash (PUT 127.0.0.1:3000/:key/trash/restore/:id)
 	trash.Put("/restore/:id", middleware.RestoreOwnData(db), func(c *fiber.Ctx) error {
 		return service.RestoreDataService(c, db)
 	})
 
-	// Hapus data dari trash permanen (DELETE http://127.0.0.1:3000/access/trash/delete/:id)
+	// Hapus data dari trash permanen (DELETE http://127.0.0.1:3000/:key/trash/delete/:id)
 	trash.Delete("/delete/:id", middleware.RestoreOwnData(db), func(c *fiber.Ctx) error {
 		return service.PermanentDeleteService(c, db)
 	})

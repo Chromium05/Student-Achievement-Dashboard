@@ -42,6 +42,7 @@ func AuthRequired() fiber.Handler {
 		c.Locals("user_id", claims.UserID)
 		c.Locals("username", claims.Username)
 		c.Locals("role", claims.Role)
+		c.Locals("permissions", claims.Permissions) // Store permissions di context
 
 		return c.Next()
 	}
@@ -60,7 +61,104 @@ func AdminOnly() fiber.Handler {
 	}
 }
 
-// Hapus data sendiri untuk user
+// Middleware untuk memerlukan permission tertentu
+func RequirePermission(permission string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role := c.Locals("role").(string)
+		
+		// Admin memiliki akses ke semua permissions
+		if role == "admin" {
+			return c.Next()
+		}
+		
+		// Check apakah user memiliki permission yang dibutuhkan
+		permissions := c.Locals("permissions").([]string)
+		hasPermission := false
+		
+		for _, p := range permissions {
+			if p == permission {
+				hasPermission = true
+				break
+			}
+		}
+		
+		if !hasPermission {
+			return c.Status(403).JSON(fiber.Map{
+				"error": "Akses ditolak. Anda tidak memiliki permission: " + permission,
+			})
+		}
+		
+		return c.Next()
+	}
+}
+
+// Middleware untuk memerlukan salah satu dari beberapa permission
+func RequireAnyPermission(permissions ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role := c.Locals("role").(string)
+		
+		// Admin memiliki akses ke semua permissions
+		if role == "admin" {
+			return c.Next()
+		}
+		
+		userPermissions := c.Locals("permissions").([]string)
+		hasPermission := false
+		
+		for _, requiredPerm := range permissions {
+			for _, userPerm := range userPermissions {
+				if userPerm == requiredPerm {
+					hasPermission = true
+					break
+				}
+			}
+			if hasPermission {
+				break
+			}
+		}
+		
+		if !hasPermission {
+			return c.Status(403).JSON(fiber.Map{
+				"error": "Akses ditolak. Anda tidak memiliki permission yang dibutuhkan.",
+			})
+		}
+		
+		return c.Next()
+	}
+}
+
+// Middleware untuk memerlukan semua permission tertentu
+func RequireAllPermissions(permissions ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role := c.Locals("role").(string)
+		
+		// Admin memiliki akses ke semua permissions
+		if role == "admin" {
+			return c.Next()
+		}
+		
+		userPermissions := c.Locals("permissions").([]string)
+		
+		for _, requiredPerm := range permissions {
+			hasPermission := false
+			for _, userPerm := range userPermissions {
+				if userPerm == requiredPerm {
+					hasPermission = true
+					break
+				}
+			}
+			if !hasPermission {
+				return c.Status(403).JSON(fiber.Map{
+					"error": "Akses ditolak. Anda tidak memiliki semua permission yang dibutuhkan.",
+				})
+			}
+		}
+		
+		return c.Next()
+	}
+}
+
+// Middleware untuk memerlukan kepemilikan data sendiri untuk user
 func AuthorizePekerjaanAlumniOwnership(db *sql.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// Ambil token dari header Authorization
