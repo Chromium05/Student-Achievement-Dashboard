@@ -159,7 +159,7 @@ func RefreshTokenService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Generate new access token
-	newAccessToken, err := utils.GenerateToken(*user)
+	newAccessToken, err := utils.GenerateToken(user)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal membuat token baru",
@@ -169,7 +169,7 @@ func RefreshTokenService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Generate new refresh token (optional: rotate refresh token)
-	newRefreshToken, err := utils.GenerateRefreshToken(*user)
+	newRefreshToken, err := utils.GenerateRefreshToken(user)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal membuat refresh token baru",
