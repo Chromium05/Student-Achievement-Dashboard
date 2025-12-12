@@ -1,68 +1,74 @@
 package route
 
 import (
-	"student-report/app/service"
+	// "student-report/app/service"
+	"student-report/config"
 	"student-report/middleware"
 	"database/sql"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func RegisterRoutes(app *fiber.App, db *sql.DB) {
+func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, services *config.ServiceContainer) {
 	// Homepage (GET 127.0.0.1:3000)
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Halo trainer!")
+		return c.SendString("Selamat datang di Student Report Dashboard!")
 	})
 
-	// User Management (Admin only)
-	api := app.Group("/api/v1")
+	app.Post("/:key/v1/auth/login", func(c *fiber.Ctx) error {
+		return services.AuthService.LoginService(c)
+	})
+
+	app.Post("/:key/v1/auth/logout", middleware.AuthRequired(), func(c *fiber.Ctx) error {
+		return services.AuthService.LogoutService(c)
+	})
+
+	app.Post("/:key/v1/auth/refresh", func(c *fiber.Ctx) error {
+		return services.AuthService.RefreshTokenService(c)
+	})
+
+	api := app.Group("/:key/v1")
+
 	users := api.Group("/users", middleware.AuthRequired(), middleware.RequirePermission("user:read"))
+	
 	users.Post("/", middleware.RequirePermission("user:create"), func(c *fiber.Ctx) error {
-		return service.CreateUserService(c, db)
+		return services.UserService.CreateUserService(c)
 	})
 	users.Get("/", func(c *fiber.Ctx) error {
-		return service.GetAllUsersService(c, db)
+		return services.UserService.GetAllUsersService(c)
 	})
 	users.Get("/:id", func(c *fiber.Ctx) error {
-		return service.GetUserByIDService(c, db)
+		return services.UserService.GetUserByIDService(c)
 	})
 	users.Put("/:id", middleware.RequirePermission("user:update"), func(c *fiber.Ctx) error {
-		return service.UpdateUserService(c, db)
+		return services.UserService.UpdateUserService(c)
 	})
 	users.Delete("/:id", middleware.RequirePermission("user:delete"), func(c *fiber.Ctx) error {
-		return service.DeleteUserService(c, db)
+		return services.UserService.DeleteUserService(c)
 	})
 
-	// Student Profile Management (Admin only)
 	users.Post("/:id/student-profile", middleware.RequirePermission("user:create"), func(c *fiber.Ctx) error {
-		return service.CreateStudentProfileService(c, db)
+		return services.UserService.CreateStudentProfileService(c)
 	})
 
-	// Lecturer Profile Management (Admin only)
 	users.Post("/:id/lecturer-profile", middleware.RequirePermission("user:create"), func(c *fiber.Ctx) error {
-		return service.CreateLecturerProfileService(c, db)
+		return services.UserService.CreateLecturerProfileService(c)
 	})
 
-	app.Post("/api/v1/auth/login", func(c *fiber.Ctx) error {
-		return service.LoginService(c, db)
-	})
+	// Protected routes group
+	protected := api.Group("", middleware.AuthRequired())
 
-	// Logout endpoint (POST /api/v1/auth/logout)
-	app.Post("/api/v1/auth/logout", middleware.AuthRequired(), func(c *fiber.Ctx) error {
-		return service.LogoutService(c)
-	})
-
-	app.Post("/api/v1/auth/refresh", func(c *fiber.Ctx) error {
-		return service.RefreshTokenService(c, db)
-	})
-
-	// Implementasi Middleware
-	protected := app.Group("", middleware.AuthRequired())
-
-	// Untuk routing students 
-	students := protected.Group("/:key/v1/students")
-
-	// Menampilkan semua data students (GET 127.0.0.1:3000/api/v1/students)
+	students := protected.Group("/students")
+	
 	students.Get("/", func(c *fiber.Ctx) error {
-		return service.GetStudentsService(c, db)
+		return services.StudentService.GetStudentsService(c)
+	})
+
+	students.Get("/user/:userId", func(c *fiber.Ctx) error {
+		return services.StudentService.GetStudentByUserID(c)
+	})
+
+	students.Get("/advisor/:advisorId", func(c *fiber.Ctx) error {
+		return services.StudentService.GetStudentsByAdvisorID(c)
 	})
 }

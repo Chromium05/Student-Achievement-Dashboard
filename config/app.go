@@ -1,16 +1,28 @@
 package config
 
 import (
-	"student-report/middleware"
-	"student-report/route"
 	"database/sql"
 
-	"github.com/gofiber/fiber/v2"
+	"student-report/app/repository"
+	"student-report/app/service"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewApp(db *sql.DB) *fiber.App {
-	app := fiber.New()
-	app.Use(middleware.LoggerMiddleware)
-	route.RegisterRoutes(app, db)
-	return app
+type ServiceContainer struct {
+	AuthService        *service.AuthService
+	UserService        *service.UserService
+	StudentService     *service.StudentService
+}
+
+func InitializeServices(db *sql.DB, mongoDB *mongo.Database) *ServiceContainer {
+	authRepo := repository.NewAuthRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	studentRepo := repository.NewStudentRepository(db)
+	
+	return &ServiceContainer{
+		AuthService:        service.NewAuthService(authRepo),
+		UserService:        service.NewUserService(userRepo),
+		StudentService:     service.NewStudentService(studentRepo),
+	}
 }

@@ -10,7 +10,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func LoginService(c *fiber.Ctx, db *sql.DB) error {
+type AuthService struct {
+	repo *repository.AuthRepository
+}
+
+func NewAuthService(repo *repository.AuthRepository) *AuthService {
+	return &AuthService{repo: repo}
+}
+
+func (s *AuthService) LoginService(c *fiber.Ctx) error {
 	var loginData model.LoginRequest
 	if err := c.BodyParser(&loginData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -26,7 +34,7 @@ func LoginService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
-	user, err := repository.Login(db, loginData.Username, loginData.Password)
+	user, err := s.repo.Login(loginData.Username, loginData.Password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -75,7 +83,7 @@ func LoginService(c *fiber.Ctx, db *sql.DB) error {
 	})
 }
 
-func LogoutService(c *fiber.Ctx) error {
+func (s *AuthService) LogoutService(c *fiber.Ctx) error {
 	// Ambil token dari header Authorization
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
@@ -122,7 +130,7 @@ func LogoutService(c *fiber.Ctx) error {
 	})
 }
 
-func RefreshTokenService(c *fiber.Ctx, db *sql.DB) error {
+func (s *AuthService) RefreshTokenService(c *fiber.Ctx) error {
 	var refreshReq model.RefreshTokenRequest
 	if err := c.BodyParser(&refreshReq); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -149,7 +157,7 @@ func RefreshTokenService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Ambil user dari database untuk memastikan user masih valid
-	user, err := repository.Login(db, claims.Username, "")
+	user, err := s.repo.Login(claims.Username, "")
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "User tidak ditemukan",

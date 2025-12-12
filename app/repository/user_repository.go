@@ -7,11 +7,19 @@ import (
 	"strings"
 )
 
+type UserRepository struct {
+	db *sql.DB
+}
+
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
+}
+
 // CreateUser membuat user baru dengan role yang spesifik
-func CreateUser(db *sql.DB, req model.CreateUserRequest, hashedPassword string) (model.UserResponse, error) {
+func (r *UserRepository) CreateUser(req model.CreateUserRequest, hashedPassword string) (model.UserResponse, error) {
 	var userResp model.UserResponse
 	
-	tx, err := db.Begin()
+	tx, err := r.db.Begin()
 	if err != nil {
 		return userResp, err
 	}
@@ -34,7 +42,7 @@ func CreateUser(db *sql.DB, req model.CreateUserRequest, hashedPassword string) 
 	userResp.LastName = req.LastName
 
 	// Get permissions for this role
-	permissions, err := GetPermissionsByRole(tx, req.Role)
+	permissions, err := r.getPermissionsByRole(tx, req.Role)
 	if err != nil {
 		return userResp, fmt.Errorf("error getting permissions: %w", err)
 	}
@@ -48,8 +56,8 @@ func CreateUser(db *sql.DB, req model.CreateUserRequest, hashedPassword string) 
 }
 
 // GetAllUsers mendapatkan semua users dengan filter optional
-func GetAllUsers(db *sql.DB) ([]model.UserResponse, error) {
-	rows, err := db.Query(`
+func (r *UserRepository) GetAllUsers() ([]model.UserResponse, error) {
+	rows, err := r.db.Query(`
 		SELECT id, username, email, role, is_active, created_at 
 		FROM users 
 		ORDER BY created_at DESC
@@ -71,7 +79,7 @@ func GetAllUsers(db *sql.DB) ([]model.UserResponse, error) {
 		}
 
 		// Get permissions
-		permissions, err := GetPermissionsByRoleString(db, user.Role)
+		permissions, err := r.getPermissionsByRoleString(user.Role)
 		if err == nil {
 			user.Permissions = permissions
 		}
@@ -83,9 +91,9 @@ func GetAllUsers(db *sql.DB) ([]model.UserResponse, error) {
 }
 
 // GetUserByID mendapatkan user berdasarkan ID
-func GetUserByID(db *sql.DB, userID int) (model.UserResponse, error) {
+func (r *UserRepository) GetUserByID(userID int) (model.UserResponse, error) {
 	var user model.UserResponse
-	err := db.QueryRow(`
+	err := r.db.QueryRow(`
 		SELECT id, username, email, role, is_active, created_at 
 		FROM users 
 		WHERE id = $1
@@ -97,7 +105,7 @@ func GetUserByID(db *sql.DB, userID int) (model.UserResponse, error) {
 		return user, err
 	}
 
-	permissions, err := GetPermissionsByRoleString(db, user.Role)
+	permissions, err := r.getPermissionsByRoleString(user.Role)
 	if err == nil {
 		user.Permissions = permissions
 	}
@@ -106,7 +114,7 @@ func GetUserByID(db *sql.DB, userID int) (model.UserResponse, error) {
 }
 
 // UpdateUser melakukan update pada user
-func UpdateUser(db *sql.DB, userID int, req model.UpdateUserRequest) (model.UserResponse, error) {
+func (r *UserRepository) UpdateUser(userID int, req model.UpdateUserRequest) (model.UserResponse, error) {
 	var user model.UserResponse
 
 	query := `UPDATE users SET `
@@ -127,7 +135,7 @@ func UpdateUser(db *sql.DB, userID int, req model.UpdateUserRequest) (model.User
 	query += strings.Join(setClauses, ", ") + fmt.Sprintf(" WHERE id = $%d RETURNING id, username, email, role, is_active, created_at", argNum)
 	args = append(args, userID)
 
-	err := db.QueryRow(query, args...).Scan(
+	err := r.db.QueryRow(query, args...).Scan(
 		&user.ID, &user.Username, &user.Email, 
 		&user.Role, &user.IsActive, &user.CreatedAt,
 	)
@@ -135,7 +143,7 @@ func UpdateUser(db *sql.DB, userID int, req model.UpdateUserRequest) (model.User
 		return user, err
 	}
 
-	permissions, err := GetPermissionsByRoleString(db, user.Role)
+	permissions, err := r.getPermissionsByRoleString(user.Role)
 	if err == nil {
 		user.Permissions = permissions
 	}
@@ -144,8 +152,8 @@ func UpdateUser(db *sql.DB, userID int, req model.UpdateUserRequest) (model.User
 }
 
 // DeleteUser melakukan soft delete user
-func DeleteUser(db *sql.DB, userID int) error {
-	result, err := db.Exec(`
+func (r *UserRepository) DeleteUser(userID int) error {
+	result, err := r.db.Exec(`
 		UPDATE users SET is_active = false WHERE id = $1
 	`, userID)
 	if err != nil {
@@ -164,7 +172,128 @@ func DeleteUser(db *sql.DB, userID int) error {
 	return nil
 }
 
-// GetPermissionsByRole mengambil permissions untuk suatu role dari tx
+// getPermissionsByRole mengambil permissions untuk suatu role dari tx
+func (r *UserRepository) getPermissionsByRole(tx *sql.Tx, roleName string) ([]string, error) {
+	rows, err := tx.Query(`
+		SELECT p.name FROM permissions p
+		JOIN role_permissions rp ON p.id = rp.permission_id
+		JOIN roles r ON rp.role_id = r.id
+		WHERE r.name = $1
+	`, roleName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []string
+	for rows.Next() {
+		var perm string
+		if err := rows.Scan(&perm); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perm)
+	}
+
+	return permissions, rows.Err()
+}
+
+// getPermissionsByRoleString mengambil permissions untuk suatu role
+func (r *UserRepository) getPermissionsByRoleString(roleName string) ([]string, error) {
+	rows, err := r.db.Query(`
+		SELECT p.name FROM permissions p
+		JOIN role_permissions rp ON p.id = rp.permission_id
+		JOIN roles r ON rp.role_id = r.id
+		WHERE r.name = $1
+	`, roleName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []string
+	for rows.Next() {
+		var perm string
+		if err := rows.Scan(&perm); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, perm)
+	}
+
+	return permissions, rows.Err()
+}
+
+// CreateStudentProfile membuat profil student setelah user dibuat
+func (r *UserRepository) CreateStudentProfile(userID int, req model.StudentProfileRequest) error {
+	_, err := r.db.Exec(`
+		INSERT INTO students (user_id, student_id, program_study, academic_year, advisor_id)
+		VALUES ($1, $2, $3, $4, $5)
+	`, userID, req.StudentID, req.ProgramStudy, req.AcademicYear, req.AdvisorID)
+	return err
+}
+
+// CreateLecturerProfile membuat profil lecturer setelah user dibuat
+func (r *UserRepository) CreateLecturerProfile(userID int, req model.LecturerProfileRequest) error {
+	_, err := r.db.Exec(`
+		INSERT INTO lecturers (user_id, lecturer_id, department)
+		VALUES ($1, $2, $3)
+	`, userID, req.LecturerID, req.Department)
+	return err
+}
+
+// GetStudentByUserID mengambil data student berdasarkan user_id
+func (r *UserRepository) GetStudentByUserID(userID int) (model.Students, error) {
+	var student model.Students
+	err := r.db.QueryRow(`
+		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+		FROM students
+		WHERE user_id = $1
+	`, userID).Scan(
+		&student.ID, &student.UserID, &student.StudentID, 
+		&student.Prodi, &student.Year, &student.AdvisorID, &student.CreatedAt,
+	)
+	return student, err
+}
+
+// GetLecturerByUserID mengambil data lecturer berdasarkan user_id
+func (r *UserRepository) GetLecturerByUserID(userID int) (model.Lecturers, error) {
+	var lecturer model.Lecturers
+	err := r.db.QueryRow(`
+		SELECT id, user_id, lecturer_id, department, created_at
+		FROM lecturers
+		WHERE user_id = $1
+	`, userID).Scan(
+		&lecturer.ID, &lecturer.UserID, &lecturer.LecturerID, 
+		&lecturer.Department, &lecturer.CreatedAt,
+	)
+	return lecturer, err
+}
+
+// Legacy functions for backward compatibility
+func CreateUser(db *sql.DB, req model.CreateUserRequest, hashedPassword string) (model.UserResponse, error) {
+	repo := NewUserRepository(db)
+	return repo.CreateUser(req, hashedPassword)
+}
+
+func GetAllUsers(db *sql.DB) ([]model.UserResponse, error) {
+	repo := NewUserRepository(db)
+	return repo.GetAllUsers()
+}
+
+func GetUserByID(db *sql.DB, userID int) (model.UserResponse, error) {
+	repo := NewUserRepository(db)
+	return repo.GetUserByID(userID)
+}
+
+func UpdateUser(db *sql.DB, userID int, req model.UpdateUserRequest) (model.UserResponse, error) {
+	repo := NewUserRepository(db)
+	return repo.UpdateUser(userID, req)
+}
+
+func DeleteUser(db *sql.DB, userID int) error {
+	repo := NewUserRepository(db)
+	return repo.DeleteUser(userID)
+}
+
 func GetPermissionsByRole(tx *sql.Tx, roleName string) ([]string, error) {
 	rows, err := tx.Query(`
 		SELECT p.name FROM permissions p
@@ -189,73 +318,27 @@ func GetPermissionsByRole(tx *sql.Tx, roleName string) ([]string, error) {
 	return permissions, rows.Err()
 }
 
-// GetPermissionsByRoleString mengambil permissions untuk suatu role
 func GetPermissionsByRoleString(db *sql.DB, roleName string) ([]string, error) {
-	rows, err := db.Query(`
-		SELECT p.name FROM permissions p
-		JOIN role_permissions rp ON p.id = rp.permission_id
-		JOIN roles r ON rp.role_id = r.id
-		WHERE r.name = $1
-	`, roleName)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var permissions []string
-	for rows.Next() {
-		var perm string
-		if err := rows.Scan(&perm); err != nil {
-			return nil, err
-		}
-		permissions = append(permissions, perm)
-	}
-
-	return permissions, rows.Err()
+	repo := NewUserRepository(db)
+	return repo.getPermissionsByRoleString(roleName)
 }
 
-// CreateStudentProfile membuat profil student setelah user dibuat
 func CreateStudentProfile(db *sql.DB, userID int, req model.StudentProfileRequest) error {
-	_, err := db.Exec(`
-		INSERT INTO students (user_id, student_id, program_study, academic_year, advisor_id)
-		VALUES ($1, $2, $3, $4, $5)
-	`, userID, req.StudentID, req.ProgramStudy, req.AcademicYear, req.AdvisorID)
-	return err
+	repo := NewUserRepository(db)
+	return repo.CreateStudentProfile(userID, req)
 }
 
-// CreateLecturerProfile membuat profil lecturer setelah user dibuat
 func CreateLecturerProfile(db *sql.DB, userID int, req model.LecturerProfileRequest) error {
-	_, err := db.Exec(`
-		INSERT INTO lecturers (user_id, lecturer_id, department)
-		VALUES ($1, $2, $3)
-	`, userID, req.LecturerID, req.Department)
-	return err
+	repo := NewUserRepository(db)
+	return repo.CreateLecturerProfile(userID, req)
 }
 
-// GetStudentByUserID mengambil data student berdasarkan user_id
 func GetStudentByUserID(db *sql.DB, userID int) (model.Students, error) {
-	var student model.Students
-	err := db.QueryRow(`
-		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
-		FROM students
-		WHERE user_id = $1
-	`, userID).Scan(
-		&student.ID, &student.UserID, &student.StudentID, 
-		&student.Prodi, &student.Year, &student.AdvisorID, &student.CreatedAt,
-	)
-	return student, err
+	repo := NewUserRepository(db)
+	return repo.GetStudentByUserID(userID)
 }
 
-// GetLecturerByUserID mengambil data lecturer berdasarkan user_id
 func GetLecturerByUserID(db *sql.DB, userID int) (model.Lecturers, error) {
-	var lecturer model.Lecturers
-	err := db.QueryRow(`
-		SELECT id, user_id, lecturer_id, department, created_at
-		FROM lecturers
-		WHERE user_id = $1
-	`, userID).Scan(
-		&lecturer.ID, &lecturer.UserID, &lecturer.LecturerID, 
-		&lecturer.Department, &lecturer.CreatedAt,
-	)
-	return lecturer, err
+	repo := NewUserRepository(db)
+	return repo.GetLecturerByUserID(userID)
 }

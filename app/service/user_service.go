@@ -3,7 +3,6 @@ package service
 import (
 	"student-report/app/model"
 	"student-report/app/repository"
-	// "student-report/utils"
 	"database/sql"
 	"errors"
 
@@ -11,8 +10,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserService struct {
+	repo *repository.UserRepository
+}
+
+func NewUserService(repo *repository.UserRepository) *UserService {
+	return &UserService{repo: repo}
+}
+
 // CreateUserService membuat user baru (Admin only)
-func CreateUserService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) CreateUserService(c *fiber.Ctx) error {
 	var req model.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -33,7 +40,7 @@ func CreateUserService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Create user
-	user, err := repository.CreateUser(db, req, string(hashedPassword))
+	user, err := s.repo.CreateUser(req, string(hashedPassword))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal membuat user",
@@ -50,8 +57,8 @@ func CreateUserService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // GetAllUsersService mengambil semua users (Admin only)
-func GetAllUsersService(c *fiber.Ctx, db *sql.DB) error {
-	users, err := repository.GetAllUsers(db)
+func (s *UserService) GetAllUsersService(c *fiber.Ctx) error {
+	users, err := s.repo.GetAllUsers()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal mengambil data users",
@@ -68,7 +75,7 @@ func GetAllUsersService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // GetUserByIDService mengambil user berdasarkan ID
-func GetUserByIDService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(int)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -89,7 +96,7 @@ func GetUserByIDService(c *fiber.Ctx, db *sql.DB) error {
 		}
 	}
 
-	user, err := repository.GetUserByID(db, userID)
+	user, err := s.repo.GetUserByID(userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -112,7 +119,7 @@ func GetUserByIDService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // UpdateUserService mengupdate data user
-func UpdateUserService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) UpdateUserService(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(int)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -130,7 +137,7 @@ func UpdateUserService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
-	user, err := repository.UpdateUser(db, userID, req)
+	user, err := s.repo.UpdateUser(userID, req)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -153,7 +160,7 @@ func UpdateUserService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // DeleteUserService menghapus user (Admin only)
-func DeleteUserService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) DeleteUserService(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -162,7 +169,7 @@ func DeleteUserService(c *fiber.Ctx, db *sql.DB) error {
 		})
 	}
 
-	err = repository.DeleteUser(db, userID)
+	err = s.repo.DeleteUser(userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -184,7 +191,7 @@ func DeleteUserService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // CreateStudentProfileService membuat profil student (Admin only)
-func CreateStudentProfileService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) CreateStudentProfileService(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -203,7 +210,7 @@ func CreateStudentProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Verify user exists dan role adalah student
-	user, err := repository.GetUserByID(db, userID)
+	user, err := s.repo.GetUserByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": "User tidak ditemukan",
@@ -219,7 +226,7 @@ func CreateStudentProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Create student profile
-	err = repository.CreateStudentProfile(db, userID, req)
+	err = s.repo.CreateStudentProfile(userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal membuat profil student",
@@ -229,7 +236,7 @@ func CreateStudentProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Get student profile
-	student, err := repository.GetStudentByUserID(db, userID)
+	student, err := s.repo.GetStudentByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal mengambil profil student",
@@ -246,7 +253,7 @@ func CreateStudentProfileService(c *fiber.Ctx, db *sql.DB) error {
 }
 
 // CreateLecturerProfileService membuat profil lecturer (Admin only)
-func CreateLecturerProfileService(c *fiber.Ctx, db *sql.DB) error {
+func (s *UserService) CreateLecturerProfileService(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("id")
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -265,7 +272,7 @@ func CreateLecturerProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Verify user exists dan role adalah lecturer
-	user, err := repository.GetUserByID(db, userID)
+	user, err := s.repo.GetUserByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": "User tidak ditemukan",
@@ -281,7 +288,7 @@ func CreateLecturerProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Create lecturer profile
-	err = repository.CreateLecturerProfile(db, userID, req)
+	err = s.repo.CreateLecturerProfile(userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal membuat profil lecturer",
@@ -291,7 +298,7 @@ func CreateLecturerProfileService(c *fiber.Ctx, db *sql.DB) error {
 	}
 
 	// Get lecturer profile
-	lecturer, err := repository.GetLecturerByUserID(db, userID)
+	lecturer, err := s.repo.GetLecturerByUserID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal mengambil profil lecturer",

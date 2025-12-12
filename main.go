@@ -3,16 +3,24 @@ package main
 import (
 	"student-report/config"
 	"student-report/database"
+	"student-report/route"
+	"student-report/middleware"
 	"log"
 	"os"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
 	config.LoadEnv()
 	postgres := database.PostgreConn()
 	mongoDB := database.MongoConn()
-	_ = mongoDB // Gunakan mongoDB sesuai kebutuhan aplikasi Anda
-	app := config.NewApp(postgres)
+	
+	services := config.InitializeServices(postgres, mongoDB)
+	
+	app := fiber.New()
+	app.Use(middleware.LoggerMiddleware)
+	
+	route.RegisterRoutes(app, postgres, mongoDB, services)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
