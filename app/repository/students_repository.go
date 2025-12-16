@@ -57,13 +57,15 @@ func (r *StudentRepository) GetStudentByUserID(userID string) (*model.Students, 
 		SELECT s.id, s.user_id, s.student_id, u.full_name, s.program_study, s.academic_year, 
 		s.advisor_id, s.created_at
 		FROM students AS s
-		WHERE user_id = $1
+		JOIN users AS u ON s.user_id = u.id
+		WHERE s.user_id = $1
 	`
 	var student model.Students
 	err := r.db.QueryRow(query, userID).Scan(
 		&student.ID,
 		&student.UserID,
 		&student.StudentID,
+		&student.FullName,
 		&student.Prodi,
 		&student.Year,
 		&student.AdvisorID,

@@ -6,7 +6,6 @@ import (
 	"student-report/app/service"
 	"student-report/config"
 	"student-report/middleware"
-
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -82,7 +81,7 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	achievements := protected.Group("/achievements")
 
-	// FR-003: Create Achievement http://127.0.0.1:3000/:key/v1/achievements (Mahasiswa)
+	// FR-003: Create Achievement (Mahasiswa)
 	achievements.Post("/", middleware.RequirePermission("achievement:create"), func(c *fiber.Ctx) error {
 		return service.CreateAchievementService(c, db, mongoDB)
 	})
@@ -99,7 +98,7 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	// FR-010: Get All Achievements (Admin)
 	achievements.Get("/", middleware.RequirePermission("report:view"), func(c *fiber.Ctx) error {
-		return service.GetAllAchievementsService(c, db, mongoDB)
+		return service.GetAllAchievementsWithFilterService(c, db, mongoDB)
 	})
 
 	// Get Achievement by ID
@@ -130,5 +129,17 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 	// Upload Attachment
 	achievements.Post("/:id/attachments", middleware.RequirePermission("achievement:create"), func(c *fiber.Ctx) error {
 		return service.UploadAttachmentService(c, db, mongoDB)
+	})
+
+	reports := protected.Group("/reports")
+	
+	// FR-011: Get Statistics (role-based)
+	reports.Get("/statistics", func(c *fiber.Ctx) error {
+		return service.GetStatisticsService(c, db, mongoDB)
+	})
+	
+	// Get Student Report
+	reports.Get("/student/:id", middleware.RequirePermission("report:view"), func(c *fiber.Ctx) error {
+		return service.GetStudentReportService(c, db, mongoDB)
 	})
 }

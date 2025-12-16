@@ -36,13 +36,21 @@ func CreateAchievementService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database)
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error":   "Invalid request body",
+			"details": err.Error(),
 			"success": false,
 		})
 	}
 
-	if req.AchievementType == "" || req.Title == "" {
+	if req.AchievementType == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Achievement type dan title wajib diisi",
+			"message": "Achievement type wajib diisi",
+			"success": false,
+		})
+	}
+	
+	if req.Title == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Title wajib diisi",
 			"success": false,
 		})
 	}

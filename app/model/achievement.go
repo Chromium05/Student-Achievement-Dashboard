@@ -9,7 +9,7 @@ import (
 // MongoDB Achievement Model
 type Achievement struct {
 	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	StudentID       string             `bson:"student_id" json:"student_id"`
+	StudentID       string             `bson:"studentId" json:"studentId"`
 	AchievementType string             `bson:"achievementType" json:"achievementType"` // academic, competition, organization, publication, certification, other
 	Title           string             `bson:"title" json:"title"`
 	Description     string             `bson:"description" json:"description"`
@@ -48,8 +48,7 @@ type AchievementDetails struct {
 	CertificationNumber string     `bson:"certificationNumber,omitempty" json:"certificationNumber,omitempty"`
 	ValidUntil          *time.Time `bson:"validUntil,omitempty" json:"validUntil,omitempty"`
 	
-	// Common fields
-	EventDate    *time.Time             `bson:"eventDate,omitempty" json:"eventDate,omitempty"`
+	EventDate    string                 `bson:"eventDate,omitempty" json:"eventDate,omitempty"`
 	Location     string                 `bson:"location,omitempty" json:"location,omitempty"`
 	Organizer    string                 `bson:"organizer,omitempty" json:"organizer,omitempty"`
 	Score        float64                `bson:"score,omitempty" json:"score,omitempty"`
@@ -71,7 +70,7 @@ type Attachment struct {
 // PostgreSQL Achievement Reference Model
 type AchievementReference struct {
 	ID                 string     `json:"id"`
-	StudentID          string     `json:"student_id"`
+	StudentID          string     `json:"studentId"`
 	MongoAchievementID string     `json:"mongoAchievementId"`
 	Status             string     `json:"status"` // draft, submitted, verified, rejected
 	SubmittedAt        *time.Time `json:"submittedAt"`
@@ -119,4 +118,53 @@ type UploadAttachmentRequest struct {
 	FileName string `json:"fileName" validate:"required"`
 	FileURL  string `json:"fileUrl" validate:"required"`
 	FileType string `json:"fileType" validate:"required"`
+}
+
+// Filter and statistics models for Phase 4
+type AchievementFilter struct {
+	Status          *string `json:"status"`
+	AchievementType *string `json:"achievementType"`
+	StudentID       *string `json:"studentId"`
+	DateFrom        *string `json:"dateFrom"`
+	DateTo          *string `json:"dateTo"`
+	SortBy          *string `json:"sortBy"`   // createdAt, updatedAt, title
+	SortOrder       *string `json:"sortOrder"` // asc, desc
+	Page            int     `json:"page"`
+	Limit           int     `json:"limit"`
+}
+
+type AchievementStatistics struct {
+	TotalAchievements      int                       `json:"totalAchievements"`
+	ByType                 map[string]int            `json:"byType"`
+	ByStatus               map[string]int            `json:"byStatus"`
+	ByCompetitionLevel     map[string]int            `json:"byCompetitionLevel,omitempty"`
+	TopStudents            []StudentAchievementCount `json:"topStudents"`
+	RecentVerified         int                       `json:"recentVerified"`
+	PendingVerification    int                       `json:"pendingVerification"`
+	TotalPoints            int                       `json:"totalPoints"`
+}
+
+type StudentAchievementCount struct {
+	StudentID   string `json:"studentId"`
+	StudentName string `json:"studentName"`
+	NIM         string `json:"nim"`
+	Count       int    `json:"count"`
+	TotalPoints int    `json:"totalPoints"`
+}
+
+type MonthlyStatistics struct {
+	Month string `json:"month"`
+	Count int    `json:"count"`
+}
+
+type StudentReportResponse struct {
+	StudentID          string                    `json:"studentId"`
+	StudentName        string                    `json:"studentName"`
+	NIM                string                    `json:"nim"`
+	ProgramStudy       string                    `json:"programStudy"`
+	TotalAchievements  int                       `json:"totalAchievements"`
+	TotalPoints        int                       `json:"totalPoints"`
+	ByType             map[string]int            `json:"byType"`
+	ByStatus           map[string]int            `json:"byStatus"`
+	Achievements       []AchievementResponse     `json:"achievements"`
 }

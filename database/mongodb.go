@@ -38,5 +38,9 @@ func MongoConn() *mongo.Database {
 	fmt.Println("🎉 Berhasil terhubung ke MongoDB!")
 
 	database := os.Getenv("DATABASE_NAME")
+	if database == "" {
+		database = "student_report" // Default database name
+		log.Println("Peringatan: DATABASE_NAME tidak disetel. Menggunakan default:", database)
+	}
 	return client.Database(database)
 }

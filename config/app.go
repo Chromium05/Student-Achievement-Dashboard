@@ -10,10 +10,10 @@ import (
 )
 
 type ServiceContainer struct {
-	AuthService       *service.AuthService
-	UserService       *service.UserService
-	StudentService    *service.StudentService
-	LecturerService   *service.LecturerService
+	AuthService        *service.AuthService
+	UserService        *service.UserService
+	StudentService     *service.StudentService
+	LecturerService    *service.LecturerService
 	AchievementService *service.AchievementService
 }
 
@@ -22,11 +22,11 @@ func InitializeServices(db *sql.DB, mongoDB *mongo.Database) *ServiceContainer {
 	userRepo := repository.NewUserRepository(db)
 	studentRepo := repository.NewStudentRepository(db)
 	lecturerRepo := repository.NewLecturerRepository(db)
-	
+
 	return &ServiceContainer{
-		AuthService:       service.NewAuthService(authRepo),
-		UserService:       service.NewUserService(userRepo),
-		StudentService:    service.NewStudentService(studentRepo),
-		LecturerService:   service.NewLecturerService(lecturerRepo),
+		AuthService:     service.NewAuthService(authRepo),
+		UserService:     service.NewUserService(userRepo),
+		StudentService:  service.NewStudentService(studentRepo),
+		LecturerService: service.NewLecturerService(lecturerRepo),
 	}
 }

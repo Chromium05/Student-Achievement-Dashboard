@@ -227,6 +227,70 @@ func (s *AchievementService) GetAllAchievements(ctx context.Context) ([]model.Ac
 	return s.combineMultipleAchievements(ctx, refs)
 }
 
+func (s *AchievementService) GetAllAchievementsWithFilter(ctx context.Context, filter model.AchievementFilter) ([]model.AchievementResponse, int64, error) {
+	achievements, total, err := s.repo.GetAchievementsWithFilter(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var results []model.AchievementResponse
+	for _, achievement := range achievements {
+		// Get reference from PostgreSQL
+		ref, err := s.repo.GetAchievementReferenceByMongoID(achievement.ID.Hex())
+		if err != nil {
+			continue
+		}
+
+		results = append(results, *s.combineAchievementResponse(&achievement, ref))
+	}
+
+	return results, total, nil
+}
+
+func (s *AchievementService) GetStatistics(ctx context.Context, studentIDs []string) (*model.AchievementStatistics, error) {
+	stats, err := s.repo.GetAchievementStatistics(ctx, studentIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get top students
+	topStudents, err := s.repo.GetTopStudents(ctx, 10)
+	if err == nil {
+		stats.TopStudents = topStudents
+	}
+
+	return stats, nil
+}
+
+func (s *AchievementService) GetStudentReport(ctx context.Context, studentID string) (*model.StudentReportResponse, error) {
+	// Get achievements
+	achievements, err := s.GetAchievementsByStudentID(ctx, studentID)
+	if err != nil {
+		return nil, err
+	}
+
+	studentName, nim := s.repo.GetStudentInfo(studentID)
+
+	// Calculate statistics
+	report := &model.StudentReportResponse{
+		StudentID:         studentID,
+		StudentName:       studentName,
+		NIM:               nim,
+		TotalAchievements: len(achievements),
+		ByType:            make(map[string]int),
+		ByStatus:          make(map[string]int),
+		Achievements:      achievements,
+	}
+
+	for _, achievement := range achievements {
+		report.ByType[achievement.AchievementType]++
+		report.ByStatus[achievement.Status]++
+		report.TotalPoints += achievement.Points
+	}
+
+	return report, nil
+}
+
 // Upload Attachment
 func (s *AchievementService) UploadAttachment(ctx context.Context, refID, studentID string, req model.UploadAttachmentRequest) error {
 	ref, err := s.repo.GetAchievementReference(refID)
