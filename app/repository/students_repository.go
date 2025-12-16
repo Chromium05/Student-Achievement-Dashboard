@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"student-report/app/model"
 	"database/sql"
+	"student-report/app/model"
 )
 
 type StudentRepository struct {
@@ -15,9 +15,10 @@ func NewStudentRepository(db *sql.DB) *StudentRepository {
 
 func (r *StudentRepository) GetStudentsRepository() ([]model.Students, error) {
 	rows, err := r.db.Query(`
-		SELECT id, user_id, student_id, program_study, academic_year, 
-		advisor_id, created_at
-		FROM students
+		SELECT s.id, s.user_id, s.student_id, u.full_name, s.program_study, s.academic_year, 
+		s.advisor_id, s.created_at
+		FROM students AS s
+		JOIN users AS u ON s.user_id = u.id
 	`)
 	if err != nil {
 		return nil, err
@@ -32,6 +33,7 @@ func (r *StudentRepository) GetStudentsRepository() ([]model.Students, error) {
 			&students.ID,
 			&students.UserID,
 			&students.StudentID,
+			&students.FullName,
 			&students.Prodi,
 			&students.Year,
 			&students.AdvisorID,
@@ -52,9 +54,9 @@ func (r *StudentRepository) GetStudentsRepository() ([]model.Students, error) {
 
 func (r *StudentRepository) GetStudentByUserID(userID string) (*model.Students, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, 
-		advisor_id, created_at
-		FROM students
+		SELECT s.id, s.user_id, s.student_id, u.full_name, s.program_study, s.academic_year, 
+		s.advisor_id, s.created_at
+		FROM students AS s
 		WHERE user_id = $1
 	`
 	var student model.Students
@@ -75,9 +77,10 @@ func (r *StudentRepository) GetStudentByUserID(userID string) (*model.Students, 
 
 func (r *StudentRepository) GetStudentsByAdvisorID(advisorID string) ([]model.Students, error) {
 	query := `
-		SELECT id, user_id, student_id, program_study, academic_year, 
-		advisor_id, created_at
-		FROM students
+		SELECT s.id, s.user_id, s.student_id, u.full_name, s.program_study, s.academic_year, 
+		s.advisor_id, s.created_at
+		FROM students s
+		JOIN users u ON s.user_id = u.id
 		WHERE advisor_id = $1
 	`
 	rows, err := r.db.Query(query, advisorID)
@@ -93,6 +96,7 @@ func (r *StudentRepository) GetStudentsByAdvisorID(advisorID string) ([]model.St
 			&student.ID,
 			&student.UserID,
 			&student.StudentID,
+			&student.FullName,
 			&student.Prodi,
 			&student.Year,
 			&student.AdvisorID,

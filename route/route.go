@@ -62,7 +62,7 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	students := protected.Group("/students")
 	
-	students.Get("/", func(c *fiber.Ctx) error {
+	students.Get("/", middleware.RequirePermission("student:read"), func(c *fiber.Ctx) error {
 		return services.StudentService.GetStudentsService(c)
 	})
 
@@ -72,6 +72,12 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	students.Get("/advisor/:advisorId", func(c *fiber.Ctx) error {
 		return services.StudentService.GetStudentsByAdvisorID(c)
+	})
+
+	lecturers := protected.Group("/lecturers")
+
+	lecturers.Get("/", func(c *fiber.Ctx) error {
+		return services.LecturerService.GetLecturersService(c)
 	})
 
 	achievements := protected.Group("/achievements")
