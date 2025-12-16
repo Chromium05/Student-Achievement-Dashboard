@@ -31,6 +31,7 @@ func GenerateRefreshToken(user model.User) (string, error) {
 		UserID:    user.ID,
 		Username:  user.Username,
 		Role:      user.Role,
+		Permissions: user.Permissions,
 		TokenType: "refresh",
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), // Refresh token expire 7 hari

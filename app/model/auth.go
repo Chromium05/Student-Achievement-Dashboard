@@ -6,11 +6,13 @@ import (
 )
 
 type User struct {
-	ID          int       `json:"id"`
+	ID          string    `json:"id"` // UUID instead of int
 	Username    string    `json:"username"`
 	Email       string    `json:"email"`
+	FullName    string    `json:"full_name"` // full_name field
 	Role        string    `json:"role"`
-	Permissions []string  `json:"permissions"` // Add permissions field
+	RoleID      string    `json:"role_id"` // UUID for role
+	Permissions []string  `json:"permissions"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -22,15 +24,15 @@ type LoginRequest struct {
 type LoginResponse struct {
 	User         User   `json:"user"`
 	Token        string `json:"token"`
-	RefreshToken string `json:"refresh_token"` // Add refresh token di response
+	RefreshToken string `json:"refresh_token"`
 }
 
 type JWTClaims struct {
-	UserID      int      `json:"user_id"`
+	UserID      string   `json:"user_id"` // UUID instead of int
 	Username    string   `json:"username"`
 	Role        string   `json:"role"`
-	Permissions []string `json:"permissions"` // List of permissions (e.g., "achievement:create", "achievement:verify")
-	TokenType   string   `json:"token_type"` // "access" atau "refresh"
+	Permissions []string `json:"permissions"`
+	TokenType   string   `json:"token_type"`
 	jwt.RegisteredClaims
 }
 
@@ -41,5 +43,5 @@ type RefreshTokenRequest struct {
 type TokenResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"` // Token expiry dalam seconds
+	ExpiresIn    int    `json:"expires_in"`
 }

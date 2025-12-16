@@ -69,14 +69,14 @@ func (s *AuthService) LoginService(c *fiber.Ctx) error {
 		})
 	}
 
-	response := model.LoginResponse{
-		Token:        token,
-		RefreshToken: refreshToken,
-	}
+	// response := model.LoginResponse{
+	// 	Token:        token,
+	// 	RefreshToken: refreshToken,
+	// }
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"token":          response.Token,
-		"refresh_token":  response.RefreshToken,
+		"token":          token,
+		"refresh_token":  refreshToken,
 		"data":           user,
 		"message":        "Login berhasil",
 		"success":        true,

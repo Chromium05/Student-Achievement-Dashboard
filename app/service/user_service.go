@@ -76,7 +76,7 @@ func (s *UserService) GetAllUsersService(c *fiber.Ctx) error {
 
 // GetUserByIDService mengambil user berdasarkan ID
 func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(int)
+	userID, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "User tidak valid",
@@ -94,6 +94,7 @@ func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
 				"success": false,
 			})
 		}
+		userID = idParam
 	}
 
 	user, err := s.repo.GetUserByID(userID)
@@ -120,7 +121,7 @@ func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
 
 // UpdateUserService mengupdate data user
 func (s *UserService) UpdateUserService(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user_id").(int)
+	userID, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "User tidak valid",
@@ -161,15 +162,15 @@ func (s *UserService) UpdateUserService(c *fiber.Ctx) error {
 
 // DeleteUserService menghapus user (Admin only)
 func (s *UserService) DeleteUserService(c *fiber.Ctx) error {
-	userID, err := c.ParamsInt("id")
-	if err != nil {
+	userID := c.Params("id")
+	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "ID user tidak valid",
 			"success": false,
 		})
 	}
 
-	err = s.repo.DeleteUser(userID)
+	err := s.repo.DeleteUser(userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -192,8 +193,8 @@ func (s *UserService) DeleteUserService(c *fiber.Ctx) error {
 
 // CreateStudentProfileService membuat profil student (Admin only)
 func (s *UserService) CreateStudentProfileService(c *fiber.Ctx) error {
-	userID, err := c.ParamsInt("id")
-	if err != nil {
+	userID := c.Params("id")
+	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "ID user tidak valid",
 			"success": false,
@@ -254,8 +255,8 @@ func (s *UserService) CreateStudentProfileService(c *fiber.Ctx) error {
 
 // CreateLecturerProfileService membuat profil lecturer (Admin only)
 func (s *UserService) CreateLecturerProfileService(c *fiber.Ctx) error {
-	userID, err := c.ParamsInt("id")
-	if err != nil {
+	userID := c.Params("id")
+	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "ID user tidak valid",
 			"success": false,

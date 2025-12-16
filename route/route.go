@@ -2,9 +2,11 @@ package route
 
 import (
 	// "student-report/app/service"
+	"database/sql"
+	"student-report/app/service"
 	"student-report/config"
 	"student-report/middleware"
-	"database/sql"
+
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -70,5 +72,57 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	students.Get("/advisor/:advisorId", func(c *fiber.Ctx) error {
 		return services.StudentService.GetStudentsByAdvisorID(c)
+	})
+
+	achievements := protected.Group("/achievements")
+
+	// FR-003: Create Achievement http://127.0.0.1:3000/:key/v1/achievements (Mahasiswa)
+	achievements.Post("/", middleware.RequirePermission("achievement:create"), func(c *fiber.Ctx) error {
+		return service.CreateAchievementService(c, db, mongoDB)
+	})
+
+	// Get My Achievements (Mahasiswa)
+	achievements.Get("/my", middleware.RequirePermission("achievement:read"), func(c *fiber.Ctx) error {
+		return service.GetMyAchievementsService(c, db, mongoDB)
+	})
+
+	// FR-006: Get Advisees Achievements (Dosen Wali)
+	achievements.Get("/advisees", middleware.RequirePermission("achievement:verify"), func(c *fiber.Ctx) error {
+		return service.GetAdviseesAchievementsService(c, db, mongoDB)
+	})
+
+	// FR-010: Get All Achievements (Admin)
+	achievements.Get("/", middleware.RequirePermission("report:view"), func(c *fiber.Ctx) error {
+		return service.GetAllAchievementsService(c, db, mongoDB)
+	})
+
+	// Get Achievement by ID
+	achievements.Get("/:id", middleware.RequirePermission("achievement:read"), func(c *fiber.Ctx) error {
+		return service.GetAchievementByIDService(c, db, mongoDB)
+	})
+
+	// Update Achievement (Mahasiswa - draft only)
+	achievements.Put("/:id", middleware.RequirePermission("achievement:update"), func(c *fiber.Ctx) error {
+		return service.UpdateAchievementService(c, db, mongoDB)
+	})
+
+	// FR-004: Submit for Verification (Mahasiswa)
+	achievements.Post("/:id/submit", middleware.RequirePermission("achievement:submit"), func(c *fiber.Ctx) error {
+		return service.SubmitAchievementService(c, db, mongoDB)
+	})
+
+	// FR-007, FR-008: Verify/Reject Achievement (Dosen Wali)
+	achievements.Post("/:id/verify", middleware.RequirePermission("achievement:verify"), func(c *fiber.Ctx) error {
+		return service.VerifyAchievementService(c, db, mongoDB)
+	})
+
+	// FR-005: Delete Achievement (Mahasiswa - draft only)
+	achievements.Delete("/:id", middleware.RequirePermission("achievement:delete"), func(c *fiber.Ctx) error {
+		return service.DeleteAchievementService(c, db, mongoDB)
+	})
+
+	// Upload Attachment
+	achievements.Post("/:id/attachments", middleware.RequirePermission("achievement:create"), func(c *fiber.Ctx) error {
+		return service.UploadAttachmentService(c, db, mongoDB)
 	})
 }
