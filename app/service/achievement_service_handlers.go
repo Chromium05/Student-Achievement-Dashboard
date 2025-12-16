@@ -163,10 +163,36 @@ func SubmitAchievementService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database)
 	}
 
 	achievementRepo := repository.NewAchievementRepository(mongoDB, db)
-	achievementService := NewAchievementService(achievementRepo)
+	
+	ref, err := achievementRepo.GetAchievementReferenceByMongoID(achievementID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Achievement tidak ditemukan",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+	
+	// Check ownership
+	if ref.StudentID != student.ID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Unauthorized: you can only submit your own achievements",
+			"success": false,
+		})
+	}
 
+	// Check status - only draft can be submitted
+	if ref.Status != "draft" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Can only submit achievements in draft status",
+			"success": false,
+		})
+	}
+
+	achievementService := NewAchievementService(achievementRepo)
 	ctx := context.Background()
-	achievement, err := achievementService.SubmitForVerification(ctx, achievementID, student.ID)
+	
+	achievement, err := achievementService.SubmitForVerification(ctx, ref.ID, student.ID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Gagal submit achievement",
@@ -198,10 +224,28 @@ func DeleteAchievementService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database)
 	}
 
 	achievementRepo := repository.NewAchievementRepository(mongoDB, db)
-	achievementService := NewAchievementService(achievementRepo)
+	
+	ref, err := achievementRepo.GetAchievementReferenceByMongoID(achievementID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Achievement tidak ditemukan",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+	
+	// Check ownership
+	if ref.StudentID != student.ID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Unauthorized: you can only delete your own achievements",
+			"success": false,
+		})
+	}
 
+	achievementService := NewAchievementService(achievementRepo)
 	ctx := context.Background()
-	err = achievementService.DeleteAchievement(ctx, achievementID, student.ID)
+	
+	err = achievementService.DeleteAchievement(ctx, ref.ID, student.ID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Gagal hapus achievement",
@@ -237,10 +281,20 @@ func VerifyAchievementService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database)
 	}
 
 	achievementRepo := repository.NewAchievementRepository(mongoDB, db)
-	achievementService := NewAchievementService(achievementRepo)
+	
+	ref, err := achievementRepo.GetAchievementReferenceByMongoID(achievementID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Achievement tidak ditemukan",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
 
+	achievementService := NewAchievementService(achievementRepo)
 	ctx := context.Background()
-	achievement, err := achievementService.VerifyAchievement(ctx, achievementID, userID, req)
+	
+	achievement, err := achievementService.VerifyAchievement(ctx, ref.ID, userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Gagal memproses verifikasi",
@@ -398,10 +452,28 @@ func UploadAttachmentService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database) 
 	}
 
 	achievementRepo := repository.NewAchievementRepository(mongoDB, db)
-	achievementService := NewAchievementService(achievementRepo)
+	
+	ref, err := achievementRepo.GetAchievementReferenceByMongoID(achievementID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Achievement tidak ditemukan",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+	
+	// Check ownership
+	if ref.StudentID != student.ID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "Unauthorized: you can only upload attachments to your own achievements",
+			"success": false,
+		})
+	}
 
+	achievementService := NewAchievementService(achievementRepo)
 	ctx := context.Background()
-	err = achievementService.UploadAttachment(ctx, achievementID, student.ID, req)
+	
+	err = achievementService.UploadAttachment(ctx, ref.ID, student.ID, req)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Gagal upload attachment",
