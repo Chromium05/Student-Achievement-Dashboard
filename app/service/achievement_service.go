@@ -11,10 +11,10 @@ import (
 )
 
 type AchievementService struct {
-	repo *repository.AchievementRepository
+	repo repository.IAchievementRepository
 }
 
-func NewAchievementService(repo *repository.AchievementRepository) *AchievementService {
+func NewAchievementService(repo repository.IAchievementRepository) *AchievementService {
 	return &AchievementService{repo: repo}
 }
 

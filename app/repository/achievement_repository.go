@@ -19,6 +19,34 @@ type AchievementRepository struct {
 	sqlDB   *sql.DB
 }
 
+var _ IAchievementRepository = (*AchievementRepository)(nil)
+
+// IAchievementRepository defines the interface for achievement repository operations
+type IAchievementRepository interface {
+	// MongoDB Operations
+	CreateAchievementMongo(ctx context.Context, achievement *model.Achievement) (string, error)
+	GetAchievementMongo(ctx context.Context, mongoID string) (*model.Achievement, error)
+	UpdateAchievementMongo(ctx context.Context, mongoID string, update *model.Achievement) error
+	SoftDeleteAchievementMongo(ctx context.Context, mongoID string) error
+	AddAttachmentMongo(ctx context.Context, mongoID string, attachment model.Attachment) error
+	GetAchievementsByStudentIDs(ctx context.Context, studentIDs []string) ([]model.Achievement, error)
+	GetAchievementsWithFilter(ctx context.Context, filter model.AchievementFilter) ([]model.Achievement, int64, error)
+	GetAchievementStatistics(ctx context.Context, studentIDs []string) (*model.AchievementStatistics, error)
+	GetTopStudents(ctx context.Context, limit int) ([]model.StudentAchievementCount, error)
+	GetStudentInfo(studentID string) (string, string)
+
+	// PostgreSQL Operations
+	CreateAchievementReference(studentID, mongoID string) (string, error)
+	GetAchievementReference(id string) (*model.AchievementReference, error)
+	GetAchievementReferenceByMongoID(mongoID string) (*model.AchievementReference, error)
+	UpdateAchievementStatus(id, status string, submittedAt *time.Time) error
+	VerifyAchievement(id, verifiedBy string) error
+	RejectAchievement(id, note string) error
+	GetAchievementsByStudentID(studentID string) ([]model.AchievementReference, error)
+	GetAchievementReferencesByStudentIDs(studentIDs []string) ([]model.AchievementReference, error)
+	GetAllAchievementReferences() ([]model.AchievementReference, error)
+}
+
 func NewAchievementRepository(mongoDB *mongo.Database, sqlDB *sql.DB) *AchievementRepository {
 	return &AchievementRepository{
 		mongoDB: mongoDB,
