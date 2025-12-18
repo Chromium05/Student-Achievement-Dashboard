@@ -83,7 +83,7 @@ func (s *StudentService) GetStudentsByAdvisorID(c *fiber.Ctx) error {
 	}
 
 	advisorID := c.Params("advisorId")
-	students, err := s.repo.GetStudentsByAdvisorID(advisorID)
+	students, err := s.repo.GetStudentByAdvisorID(advisorID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal mendapatkan data students",

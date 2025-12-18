@@ -77,7 +77,7 @@ func (r *StudentRepository) GetStudentByUserID(userID string) (*model.Students, 
 	return &student, nil
 }
 
-func (r *StudentRepository) GetStudentsByAdvisorID(advisorID string) ([]model.Students, error) {
+func (r *StudentRepository) GetStudentByAdvisorID(advisorID string) ([]model.Students, error) {
 	query := `
 		SELECT s.id, s.user_id, s.student_id, u.full_name, s.program_study, s.academic_year, 
 		s.advisor_id, s.created_at

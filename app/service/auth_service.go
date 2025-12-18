@@ -69,11 +69,6 @@ func (s *AuthService) LoginService(c *fiber.Ctx) error {
 		})
 	}
 
-	// response := model.LoginResponse{
-	// 	Token:        token,
-	// 	RefreshToken: refreshToken,
-	// }
-
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"token":          token,
 		"refresh_token":  refreshToken,

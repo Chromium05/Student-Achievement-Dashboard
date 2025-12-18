@@ -38,7 +38,7 @@ func GetStatisticsService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database) err
 	} else if role == "lecturer" {
 		// Get advisees statistics
 		studentRepo := repository.NewStudentRepository(db)
-		advisees, err := studentRepo.GetStudentsByAdvisorID(userID)
+		advisees, err := studentRepo.GetStudentByAdvisorID(userID)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message": "Gagal mengambil data mahasiswa bimbingan",

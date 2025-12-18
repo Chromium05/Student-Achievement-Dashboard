@@ -353,9 +353,19 @@ func GetMyAchievementsService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database)
 func GetAdviseesAchievementsService(c *fiber.Ctx, db *sql.DB, mongoDB *mongo.Database) error {
 	userID := c.Locals("user_id").(string)
 
+	// Get lecturer ID
+	lecturerRepo := repository.NewLecturerRepository(db)
+	lecturerID, err := lecturerRepo.GetLecturerIDByUserID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": "Lecturer profile tidak ditemukan",
+			"success": false,
+		})
+	}
+
 	// Get advisees (students under this lecturer)
 	studentRepo := repository.NewStudentRepository(db)
-	advisees, err := studentRepo.GetStudentsByAdvisorID(userID)
+	advisees, err := studentRepo.GetStudentByAdvisorID(lecturerID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Gagal mengambil data mahasiswa bimbingan",
