@@ -50,7 +50,7 @@ func (r *LecturerRepository) GetLecturersRepository() ([]model.Lecturers, error)
 }
 
 func (r *LecturerRepository) GetLecturerIDByUserID(userID string) (string, error) {
-	query := `SELECT l.id FROM lecturers AS l WHERE l.user_id = $1`
+	query := `SELECT id FROM lecturers WHERE user_id = $1`
 	var lecturerID string
 	err := r.db.QueryRow(query, userID).Scan(&lecturerID)
 	if err != nil {

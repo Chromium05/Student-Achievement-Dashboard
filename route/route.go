@@ -30,6 +30,12 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 
 	api := app.Group("/:key/v1")
 
+	profile := api.Group("/auth/profile", middleware.AuthRequired())
+
+	profile.Get("/", func(c *fiber.Ctx) error {
+		return services.AuthService.GetProfileService(c)
+	})
+
 	users := api.Group("/users", middleware.AuthRequired(), middleware.RequirePermission("user:read"))
 	
 	users.Post("/", middleware.RequirePermission("user:create"), func(c *fiber.Ctx) error {

@@ -75,6 +75,33 @@ func (r *AuthRepository) getPermissionsByRole(roleName string) ([]string, error)
 	return permissions, nil
 }
 
+func (r *AuthRepository) GetUserProfile(userID string) (model.User, error) {
+	rows := r.db.QueryRow(`
+		SELECT u.id, u.username, u.email, u.full_name, r.name as role_name 
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1 AND u.is_active = true
+	`, userID)
+
+	var user model.User
+	err := rows.Scan(
+		&user.ID, 
+		&user.Username, 
+		&user.Email, 
+		&user.FullName, 
+		&user.Role,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return user, fmt.Errorf("user not found")
+		}
+		return user, err
+	}
+
+	return user, nil
+}
+
 // Legacy function for backward compatibility
 func Login(db *sql.DB, username string, password string) (model.User, error) {
 	repo := NewAuthRepository(db)

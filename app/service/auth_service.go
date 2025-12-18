@@ -195,3 +195,22 @@ func (s *AuthService) RefreshTokenService(c *fiber.Ctx) error {
 		"success":         true,
 	})
 }
+
+func (s *AuthService) GetProfileService(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(string)
+
+	response, err := s.repo.GetUserProfile(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Gagal mendapatkan profile user",
+			"error":   err.Error(),
+			"success": false,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"data":    response,
+		"message": "Berhasil mendapatkan profile user",
+		"success": true,
+	})
+}
