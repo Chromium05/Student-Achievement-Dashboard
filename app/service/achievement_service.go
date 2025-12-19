@@ -173,9 +173,9 @@ func (s *AchievementService) VerifyAchievement(ctx context.Context, refID, lectu
 	}
 
 	// Check status - only submitted can be verified/rejected
-	if ref.Status != "submitted" {
-		return nil, errors.New("can only verify/reject achievements in submitted status")
-	}
+	if ref.Status != "rejected" && ref.Status != "submitted" {
+		return nil, errors.New("can only re-verify achievements that had been rejected or are currently submitted")
+	} 
 
 	if req.Action == "verify" {
 		err = s.repo.VerifyAchievement(refID, lecturerID)
