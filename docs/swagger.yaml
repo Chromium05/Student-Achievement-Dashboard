@@ -1,0 +1,1121 @@
+basePath: /api/v1
+info:
+  contact: {}
+  description: |-
+    API untuk sistem pelaporan prestasi mahasiswa
+
+    ## Authentication
+    API ini menggunakan JWT Bearer token untuk autentikasi.
+    Setelah login, gunakan token yang diterima dengan menambahkan header:
+    `Authorization: Bearer {token}`
+
+    ## Roles & Permissions
+    - Student: Dapat membuat, melihat, update, submit dan delete prestasi sendiri
+    - Lecturer: Dapat melihat dan verify/reject prestasi mahasiswa bimbingan
+    - Admin: Full access ke semua endpoints dan user management
+  title: Student Report API
+  version: "1.0"
+paths:
+  /{key}/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user dengan username dan password, mengembalikan access
+        token dan refresh token
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            properties:
+              data:
+                properties:
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  id:
+                    type: string
+                  role:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              message:
+                type: string
+              refresh_token:
+                type: string
+              success:
+                type: boolean
+              token:
+                type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      summary: Login user
+      tags:
+      - Authentication
+  /{key}/v1/auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user dan blacklist token JWT
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logout successful
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+              user_id:
+                type: string
+              username:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized - token invalid or missing
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Authentication
+  /{key}/v1/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate new access token menggunakan refresh token
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Refresh token
+        in: body
+        name: refresh
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            properties:
+              expires_in:
+                type: integer
+              message:
+                type: string
+              refresh_token:
+                type: string
+              success:
+                type: boolean
+              token:
+                type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /{key}/v1/lecturers:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all lecturers
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lecturers retrieved successfully
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    department:
+                      type: string
+                    full_name:
+                      type: string
+                    id:
+                      type: string
+                    lecturer_id:
+                      type: string
+                    position:
+                      type: string
+                    user_id:
+                      type: string
+                  type: object
+                type: array
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all lecturers
+      tags:
+      - Lecturers
+  /{key}/v1/students:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all students
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Students retrieved successfully
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    advisor_id:
+                      type: string
+                    batch:
+                      type: string
+                    full_name:
+                      type: string
+                    gpa:
+                      type: number
+                    id:
+                      type: string
+                    major:
+                      type: string
+                    student_id:
+                      type: string
+                    user_id:
+                      type: string
+                  type: object
+                type: array
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all students
+      tags:
+      - Students
+  /{key}/v1/students/advisor/{advisorId}:
+    get:
+      consumes:
+      - application/json
+      description: Get all students under a specific advisor
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: Advisor ID
+        in: path
+        name: advisorId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Students retrieved successfully
+          schema:
+            properties:
+              data:
+                items:
+                  type: object
+                type: array
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get students by advisor ID
+      tags:
+      - Students
+  /{key}/v1/students/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Get student profile by user ID
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Student retrieved successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  advisor_id:
+                    type: string
+                  batch:
+                    type: string
+                  full_name:
+                    type: string
+                  gpa:
+                    type: number
+                  id:
+                    type: string
+                  major:
+                    type: string
+                  student_id:
+                    type: string
+                  user_id:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: Student not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get student by user ID
+      tags:
+      - Students
+  /{key}/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Get all users in system (Admin only)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Users retrieved successfully
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    created_at:
+                      type: string
+                    email:
+                      type: string
+                    full_name:
+                      type: string
+                    id:
+                      type: string
+                    role:
+                      type: string
+                    username:
+                      type: string
+                  type: object
+                type: array
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Create new user (Admin only)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User data
+        in: body
+        name: user
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  created_at:
+                    type: string
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  id:
+                    type: string
+                  role:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create new user
+      tags:
+      - Users
+  /{key}/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete user (Admin only)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted successfully
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Get user details by ID (Admin can see any user, others can only
+        see themselves)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User retrieved successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  created_at:
+                    type: string
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  id:
+                    type: string
+                  role:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update user information (Admin can update any user, others can
+        only update themselves)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: user
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  email:
+                    type: string
+                  full_name:
+                    type: string
+                  id:
+                    type: string
+                  role:
+                    type: string
+                  username:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+  /{key}/v1/users/{id}/lecturer-profile:
+    post:
+      consumes:
+      - application/json
+      description: Create lecturer profile for user with role lecturer (Admin only)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Lecturer profile data
+        in: body
+        name: profile
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Lecturer profile created successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  department:
+                    type: string
+                  id:
+                    type: string
+                  lecturer_id:
+                    type: string
+                  position:
+                    type: string
+                  user_id:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "400":
+          description: Invalid request body or user is not lecturer
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create lecturer profile
+      tags:
+      - Users
+  /{key}/v1/users/{id}/student-profile:
+    post:
+      consumes:
+      - application/json
+      description: Create student profile for user with role student (Admin only)
+      parameters:
+      - description: API Key
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Student profile data
+        in: body
+        name: profile
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Student profile created successfully
+          schema:
+            properties:
+              data:
+                properties:
+                  advisor_id:
+                    type: string
+                  batch:
+                    type: string
+                  gpa:
+                    type: number
+                  id:
+                    type: string
+                  major:
+                    type: string
+                  student_id:
+                    type: string
+                  user_id:
+                    type: string
+                type: object
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "400":
+          description: Invalid request body or user is not student
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "403":
+          description: Forbidden - insufficient permissions
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "404":
+          description: User not found
+          schema:
+            properties:
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              success:
+                type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create student profile
+      tags:
+      - Users
+schemes:
+- http
+swagger: "2.0"

@@ -18,6 +18,20 @@ func NewAuthService(repo *repository.AuthRepository) *AuthService {
 	return &AuthService{repo: repo}
 }
 
+
+// Login godoc
+// @Summary Login user
+// @Description Authenticate user dengan username dan password, mengembalikan access token dan refresh token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param login body object true "Login credentials" example({"username":"johndoe","password":"password123"})
+// @Success 200 {object} object{success=bool,message=string,token=string,refresh_token=string,data=object{id=string,username=string,full_name=string,email=string,role=string}} "Login successful"
+// @Failure 400 {object} object{success=bool,message=string,error=string} "Invalid request body"
+// @Failure 401 {object} object{success=bool,message=string,error=string} "Invalid credentials"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/auth/login [post]
 func (s *AuthService) LoginService(c *fiber.Ctx) error {
 	var loginData model.LoginRequest
 	if err := c.BodyParser(&loginData); err != nil {
@@ -78,6 +92,17 @@ func (s *AuthService) LoginService(c *fiber.Ctx) error {
 	})
 }
 
+// Logout godoc
+// @Summary Logout user
+// @Description Logout user dan blacklist token JWT
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,user_id=string,username=string} "Logout successful"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized - token invalid or missing"
+// @Router /{key}/v1/auth/logout [post]
 func (s *AuthService) LogoutService(c *fiber.Ctx) error {
 	// Ambil token dari header Authorization
 	authHeader := c.Get("Authorization")
@@ -125,6 +150,19 @@ func (s *AuthService) LogoutService(c *fiber.Ctx) error {
 	})
 }
 
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Generate new access token menggunakan refresh token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param refresh body object true "Refresh token" example({"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."})
+// @Success 200 {object} object{success=bool,message=string,token=string,refresh_token=string,expires_in=int} "Token refreshed successfully"
+// @Failure 400 {object} object{success=bool,message=string} "Invalid request body"
+// @Failure 401 {object} object{success=bool,message=string,error=string} "Invalid or expired refresh token"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/auth/refresh [post]
 func (s *AuthService) RefreshTokenService(c *fiber.Ctx) error {
 	var refreshReq model.RefreshTokenRequest
 	if err := c.BodyParser(&refreshReq); err != nil {

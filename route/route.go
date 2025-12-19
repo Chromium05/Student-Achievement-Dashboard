@@ -8,6 +8,7 @@ import (
 	"student-report/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/gofiber/swagger"
 )
 
 func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, services *config.ServiceContainer) {
@@ -15,6 +16,9 @@ func RegisterRoutes(app *fiber.App, db *sql.DB, mongoDB *mongo.Database, service
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Selamat datang di Student Report Dashboard!")
 	})
+
+	// Swagger Documentation
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	app.Post("/:key/v1/auth/login", func(c *fiber.Ctx) error {
 		return services.AuthService.LoginService(c)

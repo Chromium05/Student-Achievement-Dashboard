@@ -18,6 +18,21 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
+// CreateUser godoc
+// @Summary Create new user
+// @Description Create new user (Admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Security BearerAuth
+// @Param user body object true "User data" example({"username":"johndoe","password":"password123","full_name":"John Doe","email":"john@example.com","role":"student"})
+// @Success 201 {object} object{success=bool,message=string,data=object{id=string,username=string,full_name=string,email=string,role=string,created_at=string}} "User created successfully"
+// @Failure 400 {object} object{success=bool,message=string,error=string} "Invalid request body"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users [post]
 // CreateUserService membuat user baru (Admin only)
 func (s *UserService) CreateUserService(c *fiber.Ctx) error {
 	var req model.CreateUserRequest
@@ -56,6 +71,19 @@ func (s *UserService) CreateUserService(c *fiber.Ctx) error {
 	})
 }
 
+// GetAllUsers godoc
+// @Summary Get all users
+// @Description Get all users in system (Admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=[]object{id=string,username=string,full_name=string,email=string,role=string,created_at=string}} "Users retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users [get]
 // GetAllUsersService mengambil semua users (Admin only)
 func (s *UserService) GetAllUsersService(c *fiber.Ctx) error {
 	users, err := s.repo.GetAllUsers()
@@ -74,6 +102,21 @@ func (s *UserService) GetAllUsersService(c *fiber.Ctx) error {
 	})
 }
 
+// GetUserByID godoc
+// @Summary Get user by ID
+// @Description Get user details by ID (Admin can see any user, others can only see themselves)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param id path string true "User ID"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=object{id=string,username=string,full_name=string,email=string,role=string,created_at=string}} "User retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 404 {object} object{success=bool,message=string} "User not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users/{id} [get]
 // GetUserByIDService mengambil user berdasarkan ID
 func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
@@ -119,6 +162,23 @@ func (s *UserService) GetUserByIDService(c *fiber.Ctx) error {
 	})
 }
 
+// UpdateUser godoc
+// @Summary Update user
+// @Description Update user information (Admin can update any user, others can only update themselves)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param id path string true "User ID"
+// @Security BearerAuth
+// @Param user body object true "Update data" example({"full_name":"John Doe Updated","email":"john.new@example.com"})
+// @Success 200 {object} object{success=bool,message=string,data=object{id=string,username=string,full_name=string,email=string,role=string}} "User updated successfully"
+// @Failure 400 {object} object{success=bool,message=string,error=string} "Invalid request body"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 404 {object} object{success=bool,message=string} "User not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users/{id} [put]
 // UpdateUserService mengupdate data user
 func (s *UserService) UpdateUserService(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
@@ -160,6 +220,21 @@ func (s *UserService) UpdateUserService(c *fiber.Ctx) error {
 	})
 }
 
+// DeleteUser godoc
+// @Summary Delete user
+// @Description Delete user (Admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param id path string true "User ID"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string} "User deleted successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 404 {object} object{success=bool,message=string} "User not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users/{id} [delete]
 // DeleteUserService menghapus user (Admin only)
 func (s *UserService) DeleteUserService(c *fiber.Ctx) error {
 	userID := c.Params("id")
@@ -191,6 +266,23 @@ func (s *UserService) DeleteUserService(c *fiber.Ctx) error {
 	})
 }
 
+// CreateStudentProfile godoc
+// @Summary Create student profile
+// @Description Create student profile for user with role student (Admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param id path string true "User ID"
+// @Security BearerAuth
+// @Param profile body object true "Student profile data" example({"student_id":"12345678","major":"Teknik Informatika","batch":"2021","gpa":3.75,"advisor_id":"uuid-advisor"})
+// @Success 201 {object} object{success=bool,message=string,data=object{id=string,user_id=string,student_id=string,major=string,batch=string,gpa=number,advisor_id=string}} "Student profile created successfully"
+// @Failure 400 {object} object{success=bool,message=string,error=string} "Invalid request body or user is not student"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 404 {object} object{success=bool,message=string} "User not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users/{id}/student-profile [post]
 // CreateStudentProfileService membuat profil student (Admin only)
 func (s *UserService) CreateStudentProfileService(c *fiber.Ctx) error {
 	userID := c.Params("id")
@@ -253,6 +345,23 @@ func (s *UserService) CreateStudentProfileService(c *fiber.Ctx) error {
 	})
 }
 
+// CreateLecturerProfile godoc
+// @Summary Create lecturer profile
+// @Description Create lecturer profile for user with role lecturer (Admin only)
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param id path string true "User ID"
+// @Security BearerAuth
+// @Param profile body object true "Lecturer profile data" example({"lecturer_id":"198765432","department":"Teknik Informatika","position":"Lektor"})
+// @Success 201 {object} object{success=bool,message=string,data=object{id=string,user_id=string,lecturer_id=string,department=string,position=string}} "Lecturer profile created successfully"
+// @Failure 400 {object} object{success=bool,message=string,error=string} "Invalid request body or user is not lecturer"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 404 {object} object{success=bool,message=string} "User not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/users/{id}/lecturer-profile [post]
 // CreateLecturerProfileService membuat profil lecturer (Admin only)
 func (s *UserService) CreateLecturerProfileService(c *fiber.Ctx) error {
 	userID := c.Params("id")

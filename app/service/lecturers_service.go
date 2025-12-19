@@ -15,6 +15,18 @@ func NewLecturerService(repo *repository.LecturerRepository) *LecturerService {
 	return &LecturerService{repo: repo}
 }
 
+// GetLecturers godoc
+// @Summary Get all lecturers
+// @Description Get list of all lecturers
+// @Tags Lecturers
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=[]object{id=string,user_id=string,lecturer_id=string,full_name=string,department=string,position=string}} "Lecturers retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/lecturers [get]
 func (s *LecturerService) GetLecturersService(c *fiber.Ctx) error {
 	key := c.Params("key")
 	if key != os.Getenv("API_KEY") {

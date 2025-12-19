@@ -16,6 +16,19 @@ func NewStudentService(repo *repository.StudentRepository) *StudentService {
 	return &StudentService{repo: repo}
 }
 
+// GetStudents godoc
+// @Summary Get all students
+// @Description Get list of all students
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=[]object{id=string,user_id=string,student_id=string,full_name=string,major=string,batch=string,gpa=number,advisor_id=string}} "Students retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 403 {object} object{success=bool,message=string} "Forbidden - insufficient permissions"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/students [get]
 func (s *StudentService) GetStudentsService(c *fiber.Ctx) error {
 	key := c.Params("key")
 	if key != os.Getenv("API_KEY") {
@@ -41,6 +54,20 @@ func (s *StudentService) GetStudentsService(c *fiber.Ctx) error {
 	})
 }
 
+// GetStudentByUserID godoc
+// @Summary Get student by user ID
+// @Description Get student profile by user ID
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param userId path string true "User ID"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=object{id=string,user_id=string,student_id=string,full_name=string,major=string,batch=string,gpa=number,advisor_id=string}} "Student retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 404 {object} object{success=bool,message=string} "Student not found"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/students/user/{userId} [get]
 func (s *StudentService) GetStudentByUserID(c *fiber.Ctx) error {
 	key := c.Params("key")
 	if key != os.Getenv("API_KEY") {
@@ -73,6 +100,19 @@ func (s *StudentService) GetStudentByUserID(c *fiber.Ctx) error {
 	})
 }
 
+// GetStudentsByAdvisorID godoc
+// @Summary Get students by advisor ID
+// @Description Get all students under a specific advisor
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Param key path string true "API Key"
+// @Param advisorId path string true "Advisor ID"
+// @Security BearerAuth
+// @Success 200 {object} object{success=bool,message=string,data=[]object} "Students retrieved successfully"
+// @Failure 401 {object} object{success=bool,message=string} "Unauthorized"
+// @Failure 500 {object} object{success=bool,message=string,error=string} "Internal server error"
+// @Router /{key}/v1/students/advisor/{advisorId} [get]
 func (s *StudentService) GetStudentsByAdvisorID(c *fiber.Ctx) error {
 	key := c.Params("key")
 	if key != os.Getenv("API_KEY") {
